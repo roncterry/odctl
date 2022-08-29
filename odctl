@@ -1,0 +1,274 @@
+#!/bin/bash
+
+CONFIG_FILE=~/.config/odctl.cfg
+
+if [ -e ${CONFIG_FILE} ]
+then
+  source ${CONFIG_FILE}
+
+  if ! [ -e ~/.config/${ONEDRIVE_CONFIG} ]
+  then
+    echo
+    echo "ERROR: The specified config directory (${ONEDRIVE_CONFIG}) does not exist in ~/.config/."
+    echo
+    exit
+  fi
+else
+  echo "
+# Name of the OneDrive config for this sync profile
+#
+ONEDRIVE_CONFIG=\"_ONEDRIVE_CONFIG_PATH_\"
+
+
+# Backing store for data for this sync profile in the cloud
+#
+# If the backing store is in SharePoint then this value should be:
+#  -SharePoint
+#
+# The corresponding unit file for this sync should then be named:
+#  /usr/lib/systemd/user/onedrive-SharePoint-\${ONEDRIVE_CONFIG}
+#
+# If the backing store is just the regular OneDrive then leave this blank.
+#
+# The corresponding unit file for this sync should then be named:
+#  /usr/lib/systemd/user/onedrive-\${ONEDRIVE_CONFIG}
+#
+ONEDRIVE_BACKING_STORE=\"-SharePoint\"
+
+
+# Location of the config dir for this sync profile
+#
+ONEDRIVE_CONFIG_DIR=\"/home/${USER}/.config/\${ONEDRIVE_CONFIG}\"
+" > ${CONFIG_FILE}
+
+  echo
+  echo "A new config file was written to: ${CONFIG_FILE}"  
+  echo
+  echo "Edit this file and update the ONEDRIVE_CONFIG variable to contain the name of the OneDrive"
+  echo "config directory in ~/.config/ for this sync profile before running the command again."
+  echo
+  exit
+fi
+
+
+
+##############################################################################
+# Functions
+##############################################################################
+
+usage() {
+  echo "${0} enable|disable|status|start|stop|restart|resync|manualsync|showlog [<number_of_lines>|follow]|synclist|addsync <subdir>|rmsync <subdir> "
+  echo
+}
+
+onedrive_enable() {
+  echo
+  echo "Enabling the onedrive${ONEDRIVE_BACKING_STORE}-${ONEDRIVE_CONFIG} service"
+  systemctl --user enable onedrive${ONEDRIVE_BACKING_STORE}-${ONEDRIVE_CONFIG}.service
+  echo
+}
+
+onedrive_disable() {
+  echo
+  echo "Disabling the onedrive${ONEDRIVE_BACKING_STORE}-${ONEDRIVE_CONFIG} service"
+  systemctl --user disable onedrive${ONEDRIVE_BACKING_STORE}-${ONEDRIVE_CONFIG}.service
+  echo
+}
+
+onedrive_status() {
+  echo
+  systemctl --user status onedrive${ONEDRIVE_BACKING_STORE}-${ONEDRIVE_CONFIG}.service
+  echo
+}
+
+onedrive_start() {
+  echo
+  echo "Starting the onedrive${ONEDRIVE_BACKING_STORE}-${ONEDRIVE_CONFIG} service"
+  systemctl --user start onedrive${ONEDRIVE_BACKING_STORE}-${ONEDRIVE_CONFIG}.service
+  echo
+}
+
+onedrive_stop() {
+  echo
+  echo "Stopping the onedrive${ONEDRIVE_BACKING_STORE}-${ONEDRIVE_CONFIG} service"
+  systemctl --user stop onedrive${ONEDRIVE_BACKING_STORE}-${ONEDRIVE_CONFIG}.service
+  echo
+}
+
+onedrive_manualsync() {
+  echo
+  echo "Starting a manual sync of the ${ONEDRIVE_CONFIG} sync profile in the background"
+  echo "(The service will restart in finished)"
+  echo
+  echo "COMMAND: screen -S onedrive-sync-${ONEDRIVE_CONFIG} -d -m onedrive --synchronize --confdir=${ONEDRIVE_CONFIG_DIR}"
+  screen -S onedrive-sync-${ONEDRIVE_CONFIG} -d -m onedrive --synchronize --confdir=${ONEDRIVE_CONFIG_DIR}
+  echo
+}
+
+onedrive_resync() {
+  echo
+  echo "Starting a resync of the ${ONEDRIVE_CONFIG} sync profile in the background"
+  echo "(The service will restart in finished)"
+  echo
+  echo "COMMAND: screen -S onedrive-resync-${ONEDRIVE_CONFIG} -d -m onedrive --synchronize --resync --confdir=${ONEDRIVE_CONFIG_DIR}"
+  screen -S onedrive-resync-${ONEDRIVE_CONFIG} -d -m onedrive --synchronize --resync --confdir=${ONEDRIVE_CONFIG_DIR}
+  echo
+}
+
+onedrive_resync_force() {
+  echo
+  echo "Starting a resync of the ${ONEDRIVE_CONFIG} sync profile in the background"
+  echo "(The service will restart in finished)"
+  echo
+  echo "COMMAND: screen -S onedrive-resync-${ONEDRIVE_CONFIG} -d -m onedrive --synchronize --resync --resync-auth --confdir=${ONEDRIVE_CONFIG_DIR}"
+  screen -S onedrive-resync-${ONEDRIVE_CONFIG} -d -m onedrive --synchronize --resync --resync-auth --confdir=${ONEDRIVE_CONFIG_DIR}
+  echo
+}
+
+onedrive_showlog() {
+  echo
+  echo "Displaying Sync Profile Log File (Press q to exit)"
+  echo "-----------------------------------------------------------------------"
+  echo
+  less /var/log/onedrive/${USER}.onedrive.log
+
+}
+
+onedrive_showlog_lines() {
+  echo
+  echo "Displaying ${1} Lines of Sync Profile Log File"
+  echo "-----------------------------------------------------------------------"
+  echo
+  tail -n ${1} /var/log/onedrive/${USER}.onedrive.log
+}
+
+onedrive_showlog_follow() {
+  echo
+  echo "Following Sync Profile Log File (Press Ctrl+c to exit)"
+  echo "-----------------------------------------------------------------------"
+  echo
+  tail -n 10 -F /var/log/onedrive/${USER}.onedrive.log
+}
+
+onedrive_synclist() {
+  echo
+  echo "Synced Subdirs:"
+  echo "--------------------------------------------------"
+  grep "^[^#;]" ${ONEDRIVE_CONFIG_DIR}/sync_list
+  echo
+}
+
+onedrive_addsync() {
+  if ! [ -z ${2} ]
+  then
+  local SYNCED_SUBDIR=${2}
+  else
+    echo
+    echo "ERROR: You must specify a subdirectory to add to the sync_list."
+    echo
+    exit
+  fi
+  echo
+  echo "Adding synced subdir (${SYNCED_SUBDIR}) to the sync_list"
+  echo ${2} >> ${ONEDRIVE_CONFIG_DIR}/sync_list
+  echo
+  echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  echo "IMPORTANT: You must run a resync now. (odctl resync)"
+  echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  echo
+  echo "Synced Subdirs:"
+  echo "--------------------------------------------------"
+  grep "^[^#;]" ${ONEDRIVE_CONFIG_DIR}/sync_list
+  echo
+}
+
+onedrive_rmsync() {
+  local SYNCED_SUBDIR=${2}
+  echo
+  echo "Removing synced subdir (${SYNCED_SUBDIR}) from the sync_list"
+  sed -i "s+^${2}+###delete_me###+" ${ONEDRIVE_CONFIG_DIR}/sync_list 
+  sed -i "/^###delete_me###/d" ${ONEDRIVE_CONFIG_DIR}/sync_list 
+  echo
+  echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  echo "IMPORTANT: You must run a resync now. (odctl resync)"
+  echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  echo
+  echo "Synced Subdirs:"
+  echo "--------------------------------------------------"
+  grep "^[^#;]" ${ONEDRIVE_CONFIG_DIR}/sync_list
+  echo
+}
+
+##############################################################################
+# Main Code Body
+##############################################################################
+
+
+case ${1} in
+  enable)
+    onedrive_enable
+  ;;
+  disable)
+    onedrive_disable
+  ;;
+  status)
+    onedrive_status
+  ;;
+  start)
+    onedrive_start
+  ;;
+  stop)
+    onedrive_stop
+  ;;
+  restart)
+    onedrive_stop
+    onedrive_start
+  ;;
+  manualsync)
+    onedrive_manualsync
+  ;;
+  resync)
+    onedrive_stop
+    onedrive_resync
+    while screen -ls | grep -q onedrive-resync-${ONEDRIVE_CONFIG}
+    do
+      sleep 5
+    done
+    onedrive_start
+  ;;
+  showlog)
+    if [ -z ${2} ]
+    then
+      onedrive_showlog
+    else
+      case ${2} in
+        follow)
+          onedrive_showlog_follow
+        ;;
+        *)
+          onedrive_showlog_lines ${2}
+        ;;
+      esac
+    fi
+  ;;
+  synclist)
+    onedrive_synclist
+  ;;
+  addsync)
+    onedrive_addsync $*
+  ;;
+  rmsync)
+    onedrive_rmsync $*
+  ;;
+  help|-h|--help)
+    usage
+    exit
+  ;;
+  *)
+    echo
+    echo "ERROR: You must specify an action."
+    echo
+    usage
+    exit
+  ;;
+esac

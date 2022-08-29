@@ -1,0 +1,117 @@
+====================================================
+Install OneDrive Client:
+====================================================
+
+1) Add the network software repository:
+    zypper ar https://download.opensuse.org/repositories/network/15.4/ network
+    zypper ref
+
+2) Install the OneDrive client:
+    zypper in onedrive onedrive-completion-bash
+
+
+====================================================
+Configure OneDrive Client:
+====================================================
+
+1) Execute the following in a CLI of your choice:
+    onedrive
+
+2) Open the link provided for you in any browser.
+
+3) Follow the login process.
+   If the browser window becomes white and does not redirect you to any more pages please copy the COMPLETE link from your browser and paste it in the terminal.
+
+
+====================================================
+Configure SharePoint Integration:
+====================================================
+
+1) Retrieve the drive_id for the Sharepoint drive:
+    onedrive --get-O365-drive-id '<your site name to search>'
+
+   This will return something like the following:
+
+    Configuration file successfully loaded
+    Configuring Global Azure AD Endpoints
+    Initializing the Synchronization Engine ...
+    Office 365 Library Name Query: <your site name to search>
+    -----------------------------------------------
+    Site Name:    <your site name>
+    Library Name: <your library name>
+    drive_id:     b!6H_y8B...xU5
+    Library URL:  <your library URL>
+    -----------------------------------------------
+
+2) Create a new sync directory:
+    mkdir -p ~/SharePoint/<config_name>
+
+3) Create a new config directory:
+    mkdir -p ~/.config/<config_name>
+
+4) Copy the onedrive-SharePoint-config.template file to:
+    ~/.config/<config_name>/config
+
+5) Edit the new config file by updating the sync_dir and drive_id lines as follows:
+    sync_dir = "~/SharePoint/<config_name>
+    drive_id = "<drive_id_retrieved_above>"
+
+6) Copy the onedrive-SharePoint-template.service file file to:
+    /usr/lib/systemd/user/onedrive-SharePoint-<config_name>.service
+
+7) Edit the new service file by updating the ExecStart line as follows:
+    ExecStart=/usr/bin/onedrive --monitor --confdir=~/.config/<config_name>
+
+8) Create the directory for the log files:
+    sudo mkdir -p /var/log/onedrive
+    sudo chown .users /var/log/onedrive
+    sudo chmod 0775 /var/log/onedrive 
+
+9) Execute this in a CLI of your choice: 
+    onedrive --synchronize --verbose --dry-run --confdir=~/.config/<config_name>
+   No errors mean that everyting works and you can continue.
+   Errors mean that you need to start at step 1) of 'Configure OneDrive Client' again and verify all stuff in 'Configure SharePoint Integration'.
+
+10) Execute this in a cli: 
+     systemctl --user enable onedrive-SharePoint-<config_name>.service
+
+11) And finally as a last step run this: 
+     systemctl --user start onedrive-SharePoint-config_name>.service
+
+12) You can follow the log file to see what is happening:
+     tail -f /var/log/onedrive/${USER}.onedrive.log
+
+
+====================================================
+Configure the sync_list file:
+====================================================
+
+1) Create and open the following file to be edited:
+    ~/.config/<config_name>/sync_list
+
+2) Add the paths of the subdirectories that you want to be synced.
+
+   Note: The subdirectories listed in this file are relative paths from the main directory you are syncing.
+
+3) Kick off a resync of the synced directory:
+    systemctl --user stop onedrive-SharePoint-<config_name>.service
+    onedrive --synchronize --resync --confdir=~/.config/<config_name>
+    systemctl --user start onedrive-SharePoint-<config_name>.service
+
+   or if you are using the odctl script described below:
+
+    odctl resync
+
+IMPORTANT: Any time you modify the sync_list file you must run a resync.
+
+
+====================================================
+Use odctl:
+====================================================
+
+The user specific SharePoint instace of the OneDrive client configured above can be managed using the odctl script. 
+
+IMPORTANT: The first time you run the script it will create a new confg file (~/.config/odctl.cfg) for the script. Before running the script again you will need to edit the ONEDRIVE_CONFIG variable so that the OneDrive <config_name> matches what you created above.
+
+The odctl script can enable/disable the service (odctl enable / odctl disable), start/stop the service (odctl start / odctl stop), show the status of the service (odctl status) and kick off a resync of the synced directory.
+

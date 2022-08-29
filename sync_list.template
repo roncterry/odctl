@@ -1,0 +1,17 @@
+## Specifying a subdirectory higher up the path will cause all subdirectories
+##  deeper in the path to also be synced. Specifying a directory deeper in the
+##  path will cause the path down to that subdirectory to be created but only 
+##  the data in the specified subdirectory to be synced.
+
+## Examples:
+
+#Courses
+#Courses/Example
+#Courses/Example/EXAMPLE101
+#Courses/Example/EXAMPLE101/1.0.0
+
+
+#Templates
+#Templates/2022-03-21-mod_1
+#Templates/graphics_library
+#Templates/LibreOffice
