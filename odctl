@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# version: 0.0.2
+# date: 20220830
 
 CONFIG_FILE=~/.config/odctl.cfg
 
@@ -57,7 +60,35 @@ fi
 ##############################################################################
 
 usage() {
-  echo "${0} enable|disable|status|start|stop|restart|resync|manualsync|showlog [<number_of_lines>|follow]|synclist|addsync <subdir>|rmsync <subdir> "
+  echo "${0} <action> [<option>]"
+  echo 
+  echo "  Actions:"
+  echo "     enable              -Enable the systemd service"
+  echo "     disable             -Disable the systemd service"
+  echo "     status              -Display the status of the systemd service"
+  echo "     start               -Start the the systemd service"
+  echo "     stop                -Stop the the systemd service"
+  echo "     restart             -Restart (stop then start) the the systemd service"
+  echo "     resync [background] -Stop the the systemd service, kick off a resync"
+  echo "                          then start the systemd service again"
+  echo "                         -If the option 'background' is supplied the resync"
+  echo "                          is kicked off in the background via the screen command."
+  echo "                          The systemd service will be stopped & started as needed."
+  echo "     manualsync          -Kick off a manual sync of the profile"
+  echo "                          (the systemd service must be stopped)"
+  echo "     showlog [<option>]  -Open the sync log file with the 'less' command"
+  echo "                         -If a number is supplied as an option only that number"
+  echo "                          of the most recent lines are displayed"
+  echo "                         -If the option 'follow' is supplied the log file is"
+  echo "                          followed (tail -f)"
+  echo "     synclist            -Display the list of subirectories being synced"
+  echo "                          (displays the sync_list file)"
+  echo "     addsync <dir>       -Adds a subirectory to be synced"
+  echo "                          (adds to the the sync_list file)"
+  echo "                         -A resync must be performed after running this"
+  echo "     rmsync <dir>        -Removes a subirectory from being synced"
+  echo "                          (removes from the the sync_list file)"
+  echo "                         -A resync must be performed after running this"
   echo
 }
 
@@ -107,21 +138,21 @@ onedrive_manualsync() {
 
 onedrive_resync() {
   echo
-  echo "Starting a resync of the ${ONEDRIVE_CONFIG} sync profile in the background"
+  echo "Starting a resync of the ${ONEDRIVE_CONFIG} sync profile"
   echo "(The service will restart in finished)"
   echo
-  echo "COMMAND: screen -S onedrive-resync-${ONEDRIVE_CONFIG} -d -m onedrive --synchronize --resync --confdir=${ONEDRIVE_CONFIG_DIR}"
-  screen -S onedrive-resync-${ONEDRIVE_CONFIG} -d -m onedrive --synchronize --resync --confdir=${ONEDRIVE_CONFIG_DIR}
+  echo "COMMAND: onedrive --synchronize --resync --confdir=${ONEDRIVE_CONFIG_DIR}"
+  onedrive --synchronize --resync --confdir=${ONEDRIVE_CONFIG_DIR}
   echo
 }
 
-onedrive_resync_force() {
+onedrive_resync_background() {
   echo
   echo "Starting a resync of the ${ONEDRIVE_CONFIG} sync profile in the background"
   echo "(The service will restart in finished)"
   echo
-  echo "COMMAND: screen -S onedrive-resync-${ONEDRIVE_CONFIG} -d -m onedrive --synchronize --resync --resync-auth --confdir=${ONEDRIVE_CONFIG_DIR}"
-  screen -S onedrive-resync-${ONEDRIVE_CONFIG} -d -m onedrive --synchronize --resync --resync-auth --confdir=${ONEDRIVE_CONFIG_DIR}
+  echo "COMMAND: screen -S onedrive-resync-${ONEDRIVE_CONFIG} -d -m \'systemctl stop onedrive${ONEDRIVE_BACKING_STORE}-${ONEDRIVE_CONFIG}.service; onedrive --synchronize --resync --resync-auth --confdir=${ONEDRIVE_CONFIG_DIR}; systemctl start onedrive${ONEDRIVE_BACKING_STORE}-${ONEDRIVE_CONFIG}.service\'"
+  screen -S onedrive-resync-${ONEDRIVE_CONFIG} -d -m 'systemctl stop onedrive${ONEDRIVE_BACKING_STORE}-${ONEDRIVE_CONFIG}.serviceone; drive --synchronize --resync --resync-auth --confdir=${ONEDRIVE_CONFIG_DIR}; systemctl start onedrive${ONEDRIVE_BACKING_STORE}-${ONEDRIVE_CONFIG}.service'
   echo
 }
 
@@ -228,13 +259,20 @@ case ${1} in
     onedrive_manualsync
   ;;
   resync)
-    onedrive_stop
-    onedrive_resync
-    while screen -ls | grep -q onedrive-resync-${ONEDRIVE_CONFIG}
-    do
-      sleep 5
-    done
-    onedrive_start
+    case ${2} in
+      background)
+        onedrive_resync_background
+        while screen -ls | grep -q onedrive-resync-${ONEDRIVE_CONFIG}
+        do
+          sleep 5
+        done
+      ;;
+      *)
+        onedrive_stop
+        onedrive_resync
+        onedrive_start
+      ;;
+    esac
   ;;
   showlog)
     if [ -z ${2} ]
