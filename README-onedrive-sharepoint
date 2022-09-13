@@ -69,8 +69,8 @@ Configure SharePoint Integration:
 
 9) Execute this in a CLI of your choice: 
     onedrive --synchronize --verbose --dry-run --confdir=~/.config/<config_name>
-   No errors mean that everyting works and you can continue.
-   Errors mean that you need to start at step 1) of 'Configure OneDrive Client' again and verify all stuff in 'Configure SharePoint Integration'.
+   No errors means that everything works and you can continue.
+   Errors means that you need to start at step 1) of 'Configure OneDrive Client' again and verify all stuff in 'Configure SharePoint Integration'.
 
 10) Execute this in a cli: 
      systemctl --user enable onedrive-SharePoint-<config_name>.service
@@ -113,5 +113,5 @@ The user specific SharePoint instace of the OneDrive client configured above can
 
 IMPORTANT: The first time you run the script it will create a new confg file (~/.config/odctl.cfg) for the script. Before running the script again you will need to edit the ONEDRIVE_CONFIG variable so that the OneDrive <config_name> matches what you created above.
 
-The odctl script can enable/disable the service (odctl enable / odctl disable), start/stop the service (odctl start / odctl stop), show the status of the service (odctl status) and kick off a resync of the synced directory.
+The odctl script can enable/disable the service (odctl enable / odctl disable), start/stop the service (odctl start / odctl stop), show the status of the service (odctl status) and kick off a resync of the synced directory (odctl resync).
 
