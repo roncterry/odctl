@@ -6,6 +6,13 @@ OneDrive Client Wrapper Script
 Follow the instructions in the `README-onedrive-sharepoint`/`README-onedrive-sharepoint.md` file to configure the initial sync profile.
 
 # Usage:
+
+**IMPORTANT:** 
+
+The first time the `odctl` command is run a new config file will be created (`~/.config/odctl.cfg`). Before running the `odctl` command again this file must be updated by editing the ONEDRIVE_CONFIG variable to match the name of the sync profile and ONEDRIVE_CONFIG_DIR variable to match the path to the sync profile's config directory that were configured when following the instructions in the README-onedrive-sharepoint file.
+
+## Options
+
 Enable/disable the Systemd service that monitors and syncs the sync profile.
 
 `odctl enable` / `odctl disable `
