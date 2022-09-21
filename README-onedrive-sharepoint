@@ -22,6 +22,19 @@ Authorize the OneDrive Client:
 3) Follow the login process.
    If the browser window becomes white and does not redirect you to any more pages please copy the COMPLETE link from your browser and paste it in the terminal.
 
+Example:
+
+[user@hostname ~]$ onedrive
+Authorize this app visiting:
+
+https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=22c49a0d-d21c-4792-aed1-8f163c982546&scope=Files.ReadWrite%20Files.ReadWrite.all%20Sites.ReadWrite.All%20offline_access&response_type=code&redirect_uri=https://login.microsoftonline.com/common/oauth2/nativeclient
+
+Enter the response uri: https://login.microsoftonline.com/common/oauth2/nativeclient?code=<redacted>
+
+Application has been successfully authorised, however no additional command switches were provided.
+
+Please use 'onedrive --help' for further assistance in regards to running this application.
+
 
 ====================================================
 Configure SharePoint Integration:
