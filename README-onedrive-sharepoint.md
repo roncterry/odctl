@@ -11,7 +11,7 @@
     `zypper in onedrive onedrive-completion-bash`
 
 
-# Configure OneDrive Client:
+# Authorize the Application with Your OneDrive Account:
 
 1. Execute the following in a CLI of your choice:
 
