@@ -23,6 +23,10 @@ Start/stop the Systemd service that monitors and syncs the sync profile.
 
 Display the status of the Systemd service that monitors the sync profile.
 
+`odctl reauth` 
+
+Reauthorize (log out then log back in) the onedrive client with OneDrive/SharePoint. This will refresh the authentication token if it has gone stale. You will need to follow the instructions that are displayed in the terminal to use the provided URL in a web browser to log in and then copy/paste the resulting URL from the browser back to the command line.
+
 `odctl status`
 
 Kick off a resync of the sync profile. (Must be done after editing the `config` file or the `sync_list` file).

@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# version: 0.0.2
-# date: 20220830
+# version: 0.0.3
+# date: 20221020
 
 CONFIG_FILE=~/.config/odctl.cfg
 
@@ -69,16 +69,20 @@ usage() {
   echo "     start               -Start the the systemd service"
   echo "     stop                -Stop the the systemd service"
   echo "     restart             -Restart (stop then start) the the systemd service"
+  echo "     reauth              -Refresh (logout > reauth) the onedrive client"
+  echo "                          authorization with OneDrive/SharePoint"
   echo "     resync [background] -Stop the the systemd service, kick off a resync"
   echo "                          then start the systemd service again"
-  echo "                         -If the option 'background' is supplied the resync"
-  echo "                          is kicked off in the background via the screen command."
-  echo "                          The systemd service will be stopped & started as needed."
+  echo "                         -If the option 'background' is supplied the"
+  echo "                          resync is kicked off in the background via the"
+  echo "                          screen command."
+  echo "                          The systemd service will be stopped & started"
+  echo "                          as needed."
   echo "     manualsync          -Kick off a manual sync of the profile"
   echo "                          (the systemd service must be stopped)"
   echo "     showlog [<option>]  -Open the sync log file with the 'less' command"
-  echo "                         -If a number is supplied as an option only that number"
-  echo "                          of the most recent lines are displayed"
+  echo "                         -If a number is supplied as an option only that"
+  echo "                          number of the most recent lines are displayed"
   echo "                         -If the option 'follow' is supplied the log file is"
   echo "                          followed (tail -f)"
   echo "     synclist            -Display the list of subirectories being synced"
@@ -123,6 +127,21 @@ onedrive_stop() {
   echo
   echo "Stopping the onedrive${ONEDRIVE_BACKING_STORE}-${ONEDRIVE_CONFIG} service"
   systemctl --user stop onedrive${ONEDRIVE_BACKING_STORE}-${ONEDRIVE_CONFIG}.service
+  echo
+}
+
+onedrive_reauth() {
+  echo
+  echo "Logging out and reauthenticating"
+  echo
+  echo "Please follow the instructions to open the provided URL in a"
+  echo "web browser, log in and copy/paste the authorization URL to"
+  echo "refresh the client authorization."
+  echo
+  echo "COMMAND: onedrive --logout --confdir=${ONEDRIVE_CONFIG_DIR}"
+  onedrive --logout --confdir=${ONEDRIVE_CONFIG_DIR}
+  echo "COMMAND: onedrive --reauth --confdir=${ONEDRIVE_CONFIG_DIR}"
+  onedrive --reauth --confdir=${ONEDRIVE_CONFIG_DIR}
   echo
 }
 
@@ -254,6 +273,9 @@ case ${1} in
   restart)
     onedrive_stop
     onedrive_start
+  ;;
+  reauth)
+    onedrive_reauth
   ;;
   manualsync)
     onedrive_manualsync
